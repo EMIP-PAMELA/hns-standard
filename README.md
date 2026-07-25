@@ -62,6 +62,19 @@ referencing a connector that isn't there does not validate. You cannot send an
 internally-inconsistent harness without being told. That is the part a PDF can never do, and
 it is the whole point.
 
+**It explains itself — including to an AI assistant, with no setup at all.** Every `.hns`
+carries a plain-text `README.txt` describing that specific file: what it is, what each entry
+inside it contains, and how to open it. The JSON uses descriptive field names rather than
+codes. So a recipient can hand the whole file to any AI assistant, with **no schema, no
+documentation, no plugin and no prior knowledge of the format**, and ask it to explain the
+harness, list what lands on a given pin, or convert it into a cut sheet — and get a real
+answer. Nothing has to be installed, configured or looked up first.
+
+That matters more than it sounds. It means the format has **no floor**: the least-equipped
+recipient you can imagine — no viewer, no software team, no idea what a `.hns` is — can still
+get the information out of it. A file that explains itself is a file nobody has to be trained
+to receive.
+
 ### And if it starts further upstream
 
 Everything above describes digitizing a customer's drawing once, at the receiving end, so
@@ -205,12 +218,10 @@ explanation and no software. **Send the `.hns` when they intend to consume the d
 3. **Your own tools** — build to [`spec/hns-schema-1.json`](spec/hns-schema-1.json) and
    ingest directly. Check a file with
    [`reference-tools/validate_hns.py`](reference-tools/validate_hns.py) (Python stdlib only).
-4. **Hand it to an AI assistant** — with no schema, no documentation, and no other context.
-   Ask it what's on pin 3 of J1, or to turn the harness into a cut list. It works because
-   every `.hns` carries a plain-text `README.txt` that describes that specific file's own
-   structure, and because the JSON uses descriptive field names rather than codes — so the
-   file explains itself to whatever opens it. This is a consequence of the design being
-   small, flat and self-describing, not a feature bolted on afterwards.
+4. **Hand it to an AI assistant** — attach the file, with no setup of any kind, and ask.
+   *"What's on pin 3 of J1?"* · *"Turn this into a cut list."* · *"Which wires land on the
+   same position?"* See [above](#what-a-hns-does-about-it) for why this works with no schema
+   and no context.
 
 ## Licensing
 
