@@ -11,8 +11,10 @@ Stewarded by Apogee Controls.
 click **"Load the example harness"** — or drag in any `.hns` of your own. Nothing is
 uploaded; it runs entirely in your browser.
 
-**Who uses it:** Apogee Controls produces `.hns` from its own engineering system today.
-There is no second implementer yet — that is exactly what this repository is for.
+**Who uses it:** Apogee Controls produces `.hns` from its own engineering system today, and
+uses it to move complete harness definitions between Apogee and sister companies under the
+Nehemiah Holdings umbrella. No outside company has implemented it yet — that is exactly what
+this repository is for.
 
 ---
 
@@ -26,7 +28,7 @@ length, every termination, into their own system. Then they draw their own versi
 send it back so the customer can confirm they read it right. That confirmation round-trip
 exists for one reason: **there was no way to send the meaning, only a picture of it.**
 
-Three things follow, and all of them cost real money:
+Four things follow, and all of them cost real money:
 
 - **Re-keying is where errors enter.** One drawing can carry thirty or more part numbers.
   Every one is transcribed by hand, by someone reading a dimension off a printout.
@@ -35,20 +37,46 @@ Three things follow, and all of them cost real money:
   double-book a connector position. It can dimension a length that doesn't match the sum of
   its own segments. These sit in circulation for years because no tool can read a PDF well
   enough to disagree with it.
+- **The handoff is scattered across loose files.** The drawing is one attachment. The wire
+  data is a spreadsheet. The bill of materials is a third file, the change note a fourth.
+  Nothing binds them together, so a person has to — keeping track of which spreadsheet
+  belongs to which revision of which drawing, and noticing when one of them has quietly
+  moved on without the others. That bookkeeping is unpaid work, and it fails silently.
 - **The round-trip is pure overhead.** Redrawing someone else's harness to prove you
   understood it adds weeks and produces nothing that didn't already exist.
 
 ## What a `.hns` does about it
 
-It carries the definition itself, so there is nothing to re-key and nothing to re-interpret.
-The original drawing can ride along inside the same file, so nobody loses the controlling
-document.
+**One file instead of a pile of them.** The harness definition, the drawing it came from, the
+revision, the provenance and a plain-English description of the file's own contents travel
+together as a single artifact. Nothing to keep in sync, nothing to mismatch, nothing for a
+person to track by hand. Open it and everything that belongs to that harness is there.
 
-And because the harness is data rather than a picture, **it can be checked.** A `.hns` with a
-double-booked position, a wire whose length disagrees with its own path, or an end that
-references a connector that isn't there does not validate. You cannot send an
+**Nothing to re-key.** It carries the definition itself, so there is nothing to transcribe
+and nothing to re-interpret. The original drawing rides along inside, so nobody loses the
+controlling document.
+
+**It can be checked.** Because the harness is data rather than a picture, a `.hns` with a
+double-booked position, a wire whose length disagrees with its own path, or an end
+referencing a connector that isn't there does not validate. You cannot send an
 internally-inconsistent harness without being told. That is the part a PDF can never do, and
 it is the whole point.
+
+### And if it starts further upstream
+
+Everything above describes digitizing a customer's drawing once, at the receiving end, so
+that everything downstream of that point is data instead of interpretation. That is worth
+doing on its own, and it works without asking anyone else to change anything.
+
+But the interpretation layer is only *reduced* that way, not removed — someone still has to
+read the drawing once and be right about it. **If the company that designs the harness
+emitted a `.hns` in the first place, that step would not exist at all.** No transcription, no
+confirmation round-trip, no drift between a drawing and the spreadsheet describing it. The
+definition would leave the designer's system and arrive in the builder's system unchanged,
+and both sides could prove it was unchanged.
+
+That is the reason this is published as an open format rather than kept as an internal file
+type. It only pays off completely if the other end can produce one too.
 
 ## Why not just send a spreadsheet?
 
