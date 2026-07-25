@@ -1,0 +1,246 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://emip-pamela.github.io/hns-standard/spec/hns-schema-1.json",
+  "title": ".hns container (harness interchange, schemaVersion 1)",
+  "description": "SUPERSEDED DRAFT -- schemaVersion 1 describes the v0.1 prototype container and is documented here so existing files remain readable. A revised model (v2) is in development and will change field names and structure; see the repository CHANGELOG before implementing. A .hns file is a ZIP archive (OPC/.docx-style). Its entries are described here as a single combined JSON document for validation convenience: {mimetype, manifest, meta, enrichment}. That combined object exists nowhere on disk -- to validate a single entry, use the corresponding definition directly, e.g. '#/definitions/manifest' for manifest.json. The archive MAY also carry one binary entry per meta.drawings[] record (path 'drawings/source/<file>' for a drawing authored by the sending party, or 'drawings/customer/<file>' for one supplied by the receiving party), STORED uncompressed, with provenance described by that array. Those binary entries are outside this JSON document's shape but are checked against meta.drawings[]. The archive SHOULD also carry a plain-text README.txt describing the specific file it is embedded in, per the specification's self-describing requirement; its absence is a warning, not a failure. NOTE: this schema documents field SHAPE only. The graph-theory invariants (root count, segments forming a tree, no double-booked connector pin, a wire's length agreeing with its path) are not expressible in JSON Schema and are specified in prose in spec/SPECIFICATION.md.",
+  "type": "object",
+  "required": ["mimetype", "manifest", "meta"],
+  "additionalProperties": false,
+  "properties": {
+    "mimetype": {
+      "const": "application/vnd.emip.harness",
+      "description": "Literal content of the archive's first entry, named 'mimetype', written STORED (uncompressed) so a reader can identify the container by reading only the first local file header, without decompressing or parsing the central directory -- the OPC/EPUB convention. This identifier changes in the v2 model."
+    },
+    "manifest": { "$ref": "#/definitions/manifest" },
+    "meta": { "$ref": "#/definitions/meta" },
+    "enrichment": { "$ref": "#/definitions/enrichment" }
+  },
+  "definitions": {
+    "manifest": {
+      "type": "object",
+      "description": "Archive entry manifest.json -- the harness graph inside a provenance envelope. `graph` is carried verbatim so meta.graphSha256 is a stable integrity anchor over topology alone, independent of any later enrichment.",
+      "required": ["format", "schemaVersion", "graph"],
+      "additionalProperties": false,
+      "properties": {
+        "format": { "const": "emip-harness/1" },
+        "schemaVersion": { "type": "integer", "minimum": 1, "description": "Incremented only on a breaking change to the shape of `graph`. Additive fields never require an increment." },
+        "graph": { "$ref": "#/definitions/harnessGraph" }
+      }
+    },
+    "harnessGraph": {
+      "type": "object",
+      "description": "The harness topology, and the sole definition of it: nothing outside this object may introduce a node, segment, or wire. Structural invariants beyond field shape are specified in prose in spec/SPECIFICATION.md.",
+      "required": ["format", "pn", "nodes", "segments", "wires"],
+      "properties": {
+        "format": { "const": "harness-graph/1", "description": "Identifies the topology model carried in this object. Required." },
+        "pn": { "type": "string", "description": "Part number this harness definition describes. Required." },
+        "rev": { "type": "string", "description": "Revision of the harness definition." },
+        "curated": { "type": "boolean", "description": "True when the graph was authored or corrected by hand rather than derived automatically. Note this indicates origin, not verification -- see `confirmed`." },
+        "source": { "type": "string", "description": "Free-text description of where this definition came from." },
+        "title": { "type": "string" },
+        "units": { "type": "string", "enum": ["in"], "description": "Unit for all length values in this graph. schemaVersion 1 is inch-only; the v2 model carries a unit with every value." },
+        "nodes": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/definitions/harnessGraphNode" }
+        },
+        "segments": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/harnessGraphSegment" }
+        },
+        "wires": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/definitions/harnessGraphWire" }
+        },
+        "notes": { "type": "array", "items": { "type": "string" }, "description": "Free-text notes carried verbatim from the source drawing or definition." },
+        "flags": { "type": "array", "items": { "type": "string" }, "description": "Markers recording that something is preliminary, a judgment call, or unconfirmed. Producers should carry these through rather than removing them." },
+        "confirmed": {
+          "type": "object",
+          "description": "An explicit record that this definition was checked against the drawing on file and found accurate. Absent by default. A definition is not confirmed merely because it is `curated`, which indicates only that it was hand-authored. Consumers should re-check `drawingRev` against the drawing actually on file before relying on an older confirmation, since a drawing revision change invalidates it.",
+          "required": ["by", "at", "drawingRev"],
+          "properties": {
+            "by": { "type": "string", "description": "Who performed the check -- a name or initials." },
+            "at": { "type": "string", "description": "Date of the check, e.g. '2026-07-22'." },
+            "drawingRev": { "type": "string", "description": "Revision of the drawing this confirmation is pinned to." }
+          }
+        },
+        "hidePicture": {
+          "type": "boolean",
+          "description": "Requests that consumers suppress automatically laid-out graphical views (schematic, pin-to-pin chart) for this harness, while still showing tabular data and any embedded drawings. Independent of `confirmed`: a definition may be entirely accurate and still produce a poor automatic drawing, because correctness and layout quality are separate concerns. This flag does not imply the data is wrong and is not a substitute for `confirmed`."
+        }
+      }
+    },
+    "harnessGraphNode": {
+      "type": "object",
+      "description": "A point in the harness: a connector, a branch point, a splice, or a termination.",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+        "type": { "type": "string", "enum": ["connector", "breakout", "splice", "grommet", "terminal", "flying-lead"] },
+        "root": { "type": "boolean", "description": "Marks the node a consumer should treat as the origin when laying the harness out." },
+        "vendor_pn": { "type": "string", "description": "The prevailing (vendor or customer) part number for the item at this node. This is the identifier intended for exchange between parties." },
+        "desc": { "type": "string" },
+        "label": { "type": "string" },
+        "terminal": { "type": "string", "description": "Free-text description of the termination at this node. Producers vary in what they place here; the v2 model decomposes this into separate part, style, and strip-length fields." },
+        "pins": { "type": "integer", "minimum": 1, "description": "Number of positions, required when `type` is 'connector'. schemaVersion 1 identifies positions by number only; the v2 model enumerates cavities explicitly so that lettered positions are expressible." },
+        "spliceKind": {
+          "type": "string",
+          "enum": ["ferrule"],
+          "description": "Set on a 'splice' node only when it is specifically a double-crimp ferrule joining two or more conductor legs to feed a single connector position. Distinct from a splice that extends a run or branches one run into two, which does not carry this field."
+        },
+        "atConnector": {
+          "type": "object",
+          "description": "For a splice or ferrule that physically inserts into a connector position, the connector node and position it lands in. This lets a consumer resolve the conductor's near end back to the real connector position, and merge conductors sharing that position into a single cell, rather than displaying the intermediate node. Optional; when absent, consumers display the node itself.",
+          "required": ["node", "pin"],
+          "properties": {
+            "node": { "type": "string", "description": "Id of the connector node this splice inserts into." },
+            "pin": { "type": "string", "description": "Position on that connector." }
+          }
+        }
+      }
+    },
+    "harnessGraphSegment": {
+      "type": "object",
+      "description": "A span of the harness between two nodes. schemaVersion 1 segments have no identifier, so nothing can be positioned along one; the v2 model gives every segment a required id.",
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "length_in": { "type": "number", "description": "Length of this span, in inches." },
+        "dim": { "type": "string", "enum": ["A+B"], "description": "Marks a span whose length is dimensioned on the drawing as a split measurement rather than a single value." },
+        "datum": { "type": "string" }
+      }
+    },
+    "harnessGraphWire": {
+      "type": "object",
+      "description": "A single conductor.",
+      "required": ["id", "gauge", "color", "length_in", "path", "end1", "end2"],
+      "properties": {
+        "id": { "type": "string" },
+        "gauge": { "type": "string", "description": "Conductor size. schemaVersion 1 carries no unit; values are AWG by convention." },
+        "color": { "type": "string", "description": "Insulation colour as free text. Producers vary between long and abbreviated forms, and the ordering of base and stripe is undefined; the v2 model adopts a controlled vocabulary with explicit roles." },
+        "wireId": { "type": "string", "description": "Printed identification marker on the physical conductor, when applicable." },
+        "length_in": { "type": "number", "description": "Conductor length in inches. schemaVersion 1 does not state whether this is a cut length or a length measured with terminals fully seated -- a real ambiguity that the v2 model resolves by carrying typed lengths." },
+        "path": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Node ids the conductor traverses, in order. A single entry indicates both ends land on the same connector with no intervening span. Because this is a walk over nodes rather than a list of spans, it cannot always describe the true physical route; the v2 model routes over segment ids instead." },
+        "end1": { "$ref": "#/definitions/harnessGraphWireEnd" },
+        "end2": { "$ref": "#/definitions/harnessGraphWireEnd" }
+      }
+    },
+    "harnessGraphWireEnd": {
+      "type": "object",
+      "required": ["node"],
+      "properties": {
+        "node": { "type": "string", "description": "Must equal the corresponding end of `path` -- the first entry for end1, the last for end2." },
+        "pin": { "type": ["string", "integer"], "description": "Required when `node` refers to a connector. Positions are numbered from 1 and must not exceed that connector's `pins`. A position must not be occupied by more than one conductor, except where a ferrule node resolves several conductors to one position." },
+        "terminal": { "type": "string", "description": "Free-text description of the termination at this end." }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "description": "Archive entry meta.json -- provenance and the integrity anchor.",
+      "required": ["partNumber", "rev", "generatedAt", "generatedBy", "source", "graphSha256", "controlled", "provenance"],
+      "properties": {
+        "partNumber": { "type": "string" },
+        "rev": { "type": "string", "description": "Revision of the harness definition, matching graph.rev." },
+        "title": { "type": "string" },
+        "customer": { "type": ["string", "null"] },
+        "generatedAt": { "type": "string", "format": "date-time", "description": "Supplied by the caller rather than read from a clock during generation, so that regenerating the same input produces byte-identical output." },
+        "generatedBy": { "type": "string" },
+        "source": { "type": "string", "description": "Identifier of the source definition this export was built from." },
+        "graphSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of manifest.graph, canonically serialized. KNOWN DEFECT in schemaVersion 1: the canonicalization rule does not constrain number formatting, so a producer that writes 18.0 and one that writes 18 for the same value compute different hashes. Implementations in languages with a single numeric type will therefore disagree with the reference implementation. The v2 model adopts RFC 8785." },
+        "controlled": { "const": false, "description": "Whether this file is a controlled document. Always false in schemaVersion 1: an export is uncontrolled once it leaves the producing system, and no controlled-export mode is defined." },
+        "provenance": { "type": "string" },
+        "origin": {
+          "type": "object",
+          "description": "Structured form of the graph's free-text `source`, best-effort.",
+          "properties": {
+            "raw": { "type": "string" },
+            "drawnBy": { "type": "string" },
+            "ec": { "type": "string" },
+            "date": { "type": "string" }
+          }
+        },
+        "drawings": {
+          "type": "array",
+          "description": "Provenance record for each drawing embedded as its own archive entry. Absent or empty when no drawing accompanies the definition.",
+          "items": { "$ref": "#/definitions/metaDrawing" }
+        }
+      }
+    },
+    "metaDrawing": {
+      "type": "object",
+      "required": ["type", "file", "arcname", "sha256", "sizeBytes"],
+      "properties": {
+        "type": { "type": "string", "description": "Free-text drawing origin, e.g. 'customer' or 'source'." },
+        "drawingNumber": { "type": "string" },
+        "description": { "type": "string" },
+        "rev": { "type": "string" },
+        "unreleased": { "type": "boolean", "description": "True when the drawing is preliminary or not yet released. Consumers must surface this rather than hide it." },
+        "file": { "type": "string", "description": "Original filename, basename only." },
+        "arcname": { "type": "string", "pattern": "^drawings/(source|customer)/.+", "description": "Archive entry path holding this drawing's raw bytes, STORED uncompressed. The origin folder is vendor-neutral: 'source' for a drawing authored by the sending party, 'customer' for one supplied by the receiving party." },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of the embedded file's raw bytes, recomputable against the archive entry at `arcname`." },
+        "sizeBytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "enrichment": {
+      "type": "object",
+      "description": "Archive entry enrichment.json -- OPTIONAL. Additional identity and reference detail about entities already present in the graph. It never introduces or alters a node, segment, or wire, and is kept in a separate entry so that meta.graphSha256 does not have to account for changes to it.",
+      "required": ["format"],
+      "properties": {
+        "format": { "const": "emip-harness-enrichment/1" },
+        "components": {
+          "type": "object",
+          "description": "Keyed by node id.",
+          "additionalProperties": { "$ref": "#/definitions/enrichmentComponent" }
+        },
+        "ext": {
+          "type": "object",
+          "description": "Graph-level detail extracted from the graph's own notes, for example an insulation temperature rating parsed from a note. Extracted only when unambiguous; the source note always remains present verbatim in the graph.",
+          "properties": {
+            "insulationTempC": { "type": "integer" },
+            "lengthToleranceNotes": { "type": "array", "items": { "type": "string" } },
+            "wireIdPlacementNote": { "type": "string" }
+          }
+        },
+        "references": {
+          "type": "array", "items": { "type": "string" },
+          "description": "Part numbers cited in a node's free text that are not otherwise modelled as their own node or component. A pointer, not a resolved bill of materials."
+        }
+      }
+    },
+    "enrichmentComponent": {
+      "type": "object",
+      "description": "Additional detail about one node. Producers may carry private, organization-specific identifiers as additional properties; consumers must ignore properties they do not recognize, and must not expect them to be present.",
+      "properties": {
+        "approvedAlternates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "vendorPN": { "type": "string" },
+              "customerPN": { "type": "string" },
+              "description": { "type": "string" },
+              "status": { "type": "string" },
+              "approvedBy": { "type": "string" },
+              "notes": { "type": "string" }
+            }
+          },
+          "description": "Alternate parts already approved for this position, in structured form. Replaces free-text equivalence notes with a decided answer a consumer can act on."
+        },
+        "terminalPartNumber": { "type": "string", "description": "Part number extracted from the node's free-text `terminal` field." },
+        "terminalSpecRef": {
+          "type": "object",
+          "description": "A reference to an external terminal specification, not a copy of it. Strip length and crimp height remain authoritative in the referenced document.",
+          "properties": {
+            "specRef": { "type": "string", "description": "Identifier of the external specification document." },
+            "sheet": { "type": "string" },
+            "type": { "type": "string" },
+            "awgRange": { "type": "string" },
+            "manufacturer": { "type": "string" },
+            "stripLength": { "type": "string" }
+          }
+        },
+        "splicePartNumber": { "type": "string", "description": "For a splice node, the splice or ferrule part number extracted from its label." }
+      }
+    }
+  }
+}

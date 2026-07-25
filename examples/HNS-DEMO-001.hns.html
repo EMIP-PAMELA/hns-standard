@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HNS-DEMO-001 — .hns viewer</title>
+<!--
+  Clean public .hns viewer (open-format reference project). Self-contained: no install, no
+  network, no dependencies. Shows the embedded drawing(s) plus the structured pin-to-pin and
+  wire-list data. Does NOT draw an auto-generated schematic and NEVER displays internal ACI
+  part numbers -- customer/vendor part numbers only.
+-->
+<style>
+  :root {
+    --hns-bg: #f4f5f7; --hns-panel: #ffffff; --hns-text: #1a1d23; --hns-text-dim: #5b6270;
+    --hns-line: #d6d9e0; --hns-accent: #1e4e9c; --hns-warn: #b3261e; --hns-warn-bg: #fdecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --hns-bg: #14171c; --hns-panel: #1c2028; --hns-text: #e7e9ee; --hns-text-dim: #9aa2b1;
+      --hns-line: #333944; --hns-accent: #6ea1f2; --hns-warn: #ff6b64; --hns-warn-bg: #3a1f1e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--hns-bg); color: var(--hns-text);
+    font: 14px/1.4 -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  #hns-app { max-width: 1200px; margin: 0 auto; padding: 14px 16px 40px; }
+  .hns-strip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+    background: var(--hns-panel); border: 1px solid var(--hns-line); border-radius: 8px; padding: 12px 16px; }
+  .hns-strip .hns-brand { font-weight: 700; color: var(--hns-accent); font-size: 16px; }
+  .hns-strip .hns-pn { font-weight: 700; }
+  .hns-strip .hns-title { color: var(--hns-text-dim); }
+  .hns-uncontrolled { margin-left: auto; font-weight: 700; letter-spacing: .04em;
+    color: var(--hns-warn); background: var(--hns-warn-bg); border: 1px solid var(--hns-warn);
+    border-radius: 5px; padding: 3px 8px; font-size: 11px; white-space: nowrap; }
+  .hns-meta { color: var(--hns-text-dim); font-size: 12px; margin: 8px 2px 14px; }
+  .hns-lenses { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .hns-lens-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--hns-line);
+    background: var(--hns-panel); color: var(--hns-text); cursor: pointer; font-size: 13px; }
+  .hns-lens-btn:hover { border-color: var(--hns-accent); }
+  .hns-lens-btn.active { background: var(--hns-accent); border-color: var(--hns-accent); color: #fff; }
+  .hns-viewbox { background: var(--hns-panel); border: 1px solid var(--hns-line);
+    border-radius: 8px; padding: 12px; min-height: 200px; overflow: auto; }
+  .hns-loading, .hns-error { color: var(--hns-text-dim); padding: 24px; text-align: center; }
+  .hns-error { color: var(--hns-warn); }
+  .hns-table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .hns-table th, .hns-table td { border: 1px solid var(--hns-line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  .hns-table th { background: var(--hns-bg); color: var(--hns-text-dim); font-weight: 600; }
+  .hns-drawing-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .hns-drawing-tab { padding: 5px 10px; border-radius: 5px; border: 1px solid var(--hns-line);
+    background: var(--hns-bg); color: var(--hns-text); cursor: pointer; font-size: 12px; }
+  .hns-drawing-tab.active { background: var(--hns-accent); border-color: var(--hns-accent); color: #fff; }
+  .hns-drawing-meta { display: flex; align-items: baseline; gap: 10px; font-size: 12px;
+    color: var(--hns-text-dim); margin-bottom: 8px; }
+  .hns-drawing-meta a { color: var(--hns-accent); }
+  .hns-drawing-embed { width: 100%; height: 78vh; border: 1px solid var(--hns-line); border-radius: 6px; }
+  .hns-prelim { color: var(--hns-warn); font-weight: 700; }
+</style>
+</head>
+<body>
+  <div id="hns-app">
+    <div class="hns-strip">
+      <span class="hns-brand">Apogee Controls, Inc.</span>
+      <span class="hns-pn">HNS-DEMO-001</span>
+      <span class="hns-title">SYNTHETIC EXAMPLE HARNESS (not a real part) &middot; Rev A</span>
+      <span class="hns-uncontrolled">UNCONTROLLED EXPORT</span>
+    </div>
+    <div class="hns-meta">Synthetic example — .hns open-format reference project &mdash; EMIP .hns/1 (emip-harness/1)</div>
+    <nav class="hns-lenses" id="hns-lens-nav">
+      <button type="button" class="hns-lens-btn" data-lens="drawings">Drawings</button>
+      <button type="button" class="hns-lens-btn" data-lens="pinpin">Pin-to-Pin Chart</button>
+      <button type="button" class="hns-lens-btn" data-lens="wirelist">Wire List</button>
+    </nav>
+    <div id="hns-viewbox" class="hns-viewbox"><div class="hns-loading">Loading&hellip;</div></div>
+    <div class="hns-footer" style="color:var(--hns-text-dim);font-size:11px;margin-top:14px;text-align:center;">
+      Self-contained EMIP .hns viewer. No install, no server, no network access required. Not a released drawing.</div>
+  </div>
+<script>window.__HNS__ = {"graph":{"format":"harness-graph/1","pn":"HNS-DEMO-001","rev":"A","curated":true,"source":"SYNTHETIC EXAMPLE -- fabricated by the .hns reference project to demonstrate the format. NOT a real product. All part numbers, connectors, and terminals below are invented (the 'DEMO-*' prefix) and correspond to no real manufacturer part. Safe to publish: contains no customer intellectual property.","title":"SYNTHETIC EXAMPLE HARNESS (not a real part)","units":"in","nodes":[{"id":"J1","type":"connector","root":true,"vendor_pn":"DEMO-PLUG-6P","desc":"Example 6-position plug (fictional)","pins":6,"label":"J1 — DEMO-PLUG-6P"},{"id":"FER1","type":"splice","spliceKind":"ferrule","atConnector":{"node":"J1","pin":"1"},"vendor_pn":"DEMO-FERRULE-2W","desc":"Example twin-wire double-crimp ferrule (fictional) -- both BLUE legs share J1 pin 1","label":"FER1 — DEMO-FERRULE-2W (pin 1)"},{"id":"J2","type":"connector","vendor_pn":"DEMO-RCPT-4P","desc":"Example 4-position receptacle (fictional)","pins":4,"label":"J2 — DEMO-RCPT-4P"},{"id":"GND","type":"terminal","desc":"Example chassis ground ring lug (fictional)","label":"Chassis Ground"}],"segments":[{"from":"J1","to":"FER1"},{"from":"FER1","to":"J2","length_in":24},{"from":"J1","to":"GND","length_in":18}],"wires":[{"id":"W1","gauge":"18","color":"BLUE","length_in":24,"path":["FER1","J2"],"end1":{"node":"FER1"},"end2":{"node":"J2","pin":"1","terminal":"DEMO-SKT"}},{"id":"W2","gauge":"18","color":"BLUE","length_in":24,"path":["FER1","J2"],"end1":{"node":"FER1"},"end2":{"node":"J2","pin":"2","terminal":"DEMO-SKT"}},{"id":"W3","gauge":"18","color":"WHITE","length_in":24,"path":["J1","FER1","J2"],"end1":{"node":"J1","pin":"3","terminal":"DEMO-PIN"},"end2":{"node":"J2","pin":"3","terminal":"DEMO-SKT"}},{"id":"W4","gauge":"16","color":"GREEN","length_in":18,"path":["J1","GND"],"end1":{"node":"J1","pin":"2","terminal":"0.25\" STRIP"},"end2":{"node":"GND","terminal":"DEMO-RING-LUG"}}],"notes":["This is a SYNTHETIC example harness that ships with the .hns open-format reference project.","It demonstrates: a plug-to-receptacle run, a double-crimp ferrule (W1 + W2 share one J1 pin), and a loose ground-terminal lead -- with no real product data.","Every part number is fictional (DEMO-* prefix)."],"flags":[]},"meta":{"partNumber":"HNS-DEMO-001","rev":"A","title":"SYNTHETIC EXAMPLE HARNESS (not a real part)","generatedAt":"","provenance":"Synthetic example — .hns open-format reference project"},"drawings":[]};</script>
+<script>
+(function () {
+  var HNS = window.__HNS__;
+  var graph = HNS.graph || {};
+  var box = document.getElementById('hns-viewbox');
+  var nodesById = {};
+  (graph.nodes || []).forEach(function (n) { nodesById[n.id] = n; });
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  // Customer-facing identity for a node: ref designator + vendor P/N. Deliberately ignores
+  // any internal 'aci' field -- the public viewer shows prevailing (customer/vendor) part
+  // numbers only.
+  function nodeName(n) {
+    if (!n) return '?';
+    var pn = n.vendor_pn || '';
+    if (n.id && pn) return n.id + ' (' + pn + ')';
+    return n.label ? String(n.label).replace(/\s*\((?:ACI[0-9]+)\)/g, '') : (pn || n.id);
+  }
+  // Resolve a wire end to "CONNECTOR pin N · terminal". A ferrule/splice that plugs into a
+  // real connector pin (atConnector) resolves to that pin, with the splice P/N as the
+  // terminal -- so a double crimp reads the way the real wire table shows it.
+  function endText(end) {
+    if (!end) return '';
+    var n = nodesById[end.node];
+    if (n && n.atConnector && nodesById[n.atConnector.node]) {
+      var conn = nodesById[n.atConnector.node];
+      var t = n.vendor_pn ? '  \u00b7  ' + esc(n.vendor_pn) + (n.spliceKind === 'ferrule' ? ' ferrule' : '') : '';
+      return esc(nodeName(conn)) + ' PIN ' + esc(n.atConnector.pin) + t;
+    }
+    var parts = [esc(nodeName(n))];
+    if (end.pin != null) parts.push('PIN ' + esc(end.pin));
+    var out = parts.join(' ');
+    if (end.terminal) out += '  \u00b7  ' + esc(end.terminal);
+    return out;
+  }
+  // Only a genuine shared SPLICE node merges (a double crimp) -- never mere matching text.
+  function mergeKey(end) {
+    var n = nodesById[end && end.node];
+    return (n && n.type === 'splice') ? n.id : null;
+  }
+
+  function renderPinToPin() {
+    var wires = graph.wires || [];
+    if (!wires.length) { box.innerHTML = '<div class="hns-loading">No wires in this harness.</div>'; return; }
+    var html = '<table class="hns-table"><thead><tr><th>Wire</th><th>Length</th>'
+      + '<th>From &mdash; End 1</th><th>To &mdash; End 2</th></tr></thead><tbody>';
+    // Precompute rowspans for shared-splice merge on each end column.
+    function spans(sel) {
+      var span = new Array(wires.length).fill(1), skip = new Array(wires.length).fill(false);
+      for (var i = 0; i < wires.length; i++) {
+        if (skip[i]) continue;
+        var k = mergeKey(sel(wires[i]));
+        if (k == null) continue;
+        var j = i + 1;
+        while (j < wires.length && mergeKey(sel(wires[j])) === k) { skip[j] = true; span[i]++; j++; }
+      }
+      return { span: span, skip: skip };
+    }
+    var f = spans(function (w) { return w.end1; });
+    var t = spans(function (w) { return w.end2; });
+    wires.forEach(function (w, i) {
+      html += '<tr><td>' + esc(w.gauge) + ' AWG ' + esc(w.color) + '</td><td>' + esc(w.length_in) + '"</td>';
+      if (!f.skip[i]) html += '<td' + (f.span[i] > 1 ? ' rowspan="' + f.span[i] + '"' : '') + '>' + endText(w.end1) + '</td>';
+      if (!t.skip[i]) html += '<td' + (t.span[i] > 1 ? ' rowspan="' + t.span[i] + '"' : '') + '>' + endText(w.end2) + '</td>';
+      html += '</tr>';
+    });
+    box.innerHTML = html + '</tbody></table>';
+  }
+
+  function renderWireList() {
+    var rows = (graph.wires || []).map(function (w) {
+      return '<tr><td>' + esc(w.id) + '</td><td>' + esc(w.gauge) + '</td><td>' + esc(w.color)
+        + '</td><td>' + esc(w.length_in) + '"</td><td>' + endText(w.end1) + '</td><td>' + endText(w.end2) + '</td></tr>';
+    }).join('');
+    box.innerHTML = '<table class="hns-table"><thead><tr><th>Wire ID</th><th>Gauge</th><th>Color</th>'
+      + '<th>Length</th><th>End 1</th><th>End 2</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  var drawingIdx = 0;
+  function renderDrawings() {
+    var drawings = HNS.drawings || [];
+    if (!drawings.length) {
+      box.innerHTML = '<div class="hns-loading">This synthetic example ships without an embedded drawing. '
+        + 'A real .hns carries the actual CAD / customer PDF(s) here.</div>';
+      return;
+    }
+    if (drawingIdx >= drawings.length) drawingIdx = 0;
+    var tabs = drawings.map(function (d, i) {
+      return '<button type="button" class="hns-drawing-tab' + (i === drawingIdx ? ' active' : '')
+        + '" data-idx="' + i + '">' + esc(d.label) + '</button>';
+    }).join('');
+    var d = drawings[drawingIdx];
+    var uri = 'data:' + d.mime + ';base64,' + d.base64;
+    var m = esc(d.file) + (d.rev ? ' &middot; Rev ' + esc(d.rev) : '')
+      + (d.unreleased ? ' &middot; <span class="hns-prelim">PRELIMINARY / NOT RELEASED</span>' : '')
+      + ' &middot; <a download="' + esc(d.file) + '" href="' + uri + '">Download</a>';
+    box.innerHTML = '<div class="hns-drawing-tabs">' + tabs + '</div><div class="hns-drawing-meta">' + m
+      + '</div><embed class="hns-drawing-embed" type="' + d.mime + '" src="' + uri + '">';
+    Array.prototype.forEach.call(box.querySelectorAll('.hns-drawing-tab'), function (btn) {
+      btn.addEventListener('click', function () { drawingIdx = parseInt(btn.getAttribute('data-idx'), 10) || 0; renderDrawings(); });
+    });
+  }
+
+  var LENSES = { drawings: renderDrawings, pinpin: renderPinToPin, wirelist: renderWireList };
+  function show(lens) {
+    Array.prototype.forEach.call(document.querySelectorAll('.hns-lens-btn'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-lens') === lens);
+    });
+    (LENSES[lens] || renderDrawings)();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.hns-lens-btn'), function (btn) {
+    btn.addEventListener('click', function () { show(btn.getAttribute('data-lens')); });
+  });
+  // Default to the real drawing when one is embedded; otherwise the pin-to-pin data.
+  show((HNS.drawings && HNS.drawings.length) ? 'drawings' : 'pinpin');
+})();</script>
+</body>
+</html>

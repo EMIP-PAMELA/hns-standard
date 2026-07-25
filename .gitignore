@@ -1,0 +1,26 @@
+# ---------------------------------------------------------------------------
+# DATA POLICY (read this): this is a PUBLIC-FACING package.
+# NEVER commit a real customer harness definition. A real harness's geometry
+# may be the customer's intellectual property. Only SYNTHETIC examples using
+# FICTIONAL part numbers belong in examples/.
+#
+# As a guard, all .hns files are ignored by default EXCEPT those explicitly
+# placed under examples/ (which must be synthetic). If you add a real .hns
+# anywhere for local testing, it will be ignored — keep it that way.
+# ---------------------------------------------------------------------------
+*.hns
+!examples/*.hns
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Local scratch
+/tmp/
+*.log
+
+# Python
+__pycache__/
+*.pyc

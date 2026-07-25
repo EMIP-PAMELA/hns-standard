@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>.hns viewer — open wire-harness interchange format</title>
+<!--
+  Reference .hns viewer (open-format project). A single self-contained page: open any .hns
+  file (drag-drop or browse) and it renders in the browser. No install, no network, no
+  dependencies -- it reads the .hns ZIP client-side (native DecompressionStream for the
+  DEFLATE JSON entries; STORED entries read directly) and shows the embedded drawing(s) plus
+  the structured pin-to-pin and wire-list data. Shows customer/vendor part numbers only;
+  never an auto-generated schematic and never internal (ACI) part numbers.
+-->
+<style>
+  :root {
+    --hns-bg: #f4f5f7; --hns-panel: #ffffff; --hns-text: #1a1d23; --hns-text-dim: #5b6270;
+    --hns-line: #d6d9e0; --hns-accent: #1e4e9c; --hns-warn: #b3261e; --hns-warn-bg: #fdecea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --hns-bg: #14171c; --hns-panel: #1c2028; --hns-text: #e7e9ee; --hns-text-dim: #9aa2b1;
+      --hns-line: #333944; --hns-accent: #6ea1f2; --hns-warn: #ff6b64; --hns-warn-bg: #3a1f1e;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--hns-bg); color: var(--hns-text);
+    font: 14px/1.4 -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  #app { max-width: 1200px; margin: 0 auto; padding: 14px 16px 40px; }
+  .strip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+    background: var(--hns-panel); border: 1px solid var(--hns-line); border-radius: 8px; padding: 12px 16px; }
+  .strip .brand { font-weight: 700; color: var(--hns-accent); font-size: 16px; }
+  .strip .tag { color: var(--hns-text-dim); font-size: 13px; }
+  .strip .pn { font-weight: 700; margin-left: auto; }
+  .intro { color: var(--hns-text-dim); font-size: 13px; margin: 12px 2px; }
+  .drop { border: 2px dashed var(--hns-line); border-radius: 10px; padding: 34px 20px; text-align: center;
+    background: var(--hns-panel); cursor: pointer; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--hns-accent); background: color-mix(in srgb, var(--hns-accent) 6%, var(--hns-panel)); }
+  .drop b { color: var(--hns-accent); }
+  .drop .hint { color: var(--hns-text-dim); font-size: 12px; margin-top: 8px; }
+  .err { color: var(--hns-warn); }
+  .lenses { display: flex; gap: 8px; margin: 14px 0 12px; flex-wrap: wrap; }
+  .lens-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--hns-line);
+    background: var(--hns-panel); color: var(--hns-text); cursor: pointer; font-size: 13px; }
+  .lens-btn:hover { border-color: var(--hns-accent); }
+  .lens-btn.active { background: var(--hns-accent); border-color: var(--hns-accent); color: #fff; }
+  .viewbox { background: var(--hns-panel); border: 1px solid var(--hns-line);
+    border-radius: 8px; padding: 12px; min-height: 200px; overflow: auto; }
+  .loading { color: var(--hns-text-dim); padding: 24px; text-align: center; }
+  table.t { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.t th, table.t td { border: 1px solid var(--hns-line); padding: 6px 10px; text-align: left; vertical-align: top; }
+  table.t th { background: var(--hns-bg); color: var(--hns-text-dim); font-weight: 600; }
+  .dtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .dtab { padding: 5px 10px; border-radius: 5px; border: 1px solid var(--hns-line);
+    background: var(--hns-bg); color: var(--hns-text); cursor: pointer; font-size: 12px; }
+  .dtab.active { background: var(--hns-accent); border-color: var(--hns-accent); color: #fff; }
+  .dmeta { display: flex; align-items: baseline; gap: 10px; font-size: 12px; color: var(--hns-text-dim); margin-bottom: 8px; }
+  .dmeta a { color: var(--hns-accent); }
+  .demb { width: 100%; height: 74vh; border: 1px solid var(--hns-line); border-radius: 6px; }
+  .prelim { color: var(--hns-warn); font-weight: 700; }
+  .foot { color: var(--hns-text-dim); font-size: 11px; margin-top: 16px; text-align: center; }
+  .foot a { color: var(--hns-accent); }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="strip">
+      <span class="brand">.hns viewer</span>
+      <span class="tag">open wire-harness interchange format</span>
+      <span class="pn" id="pn"></span>
+    </div>
+
+    <div id="landing">
+      <p class="intro">Open a <b>.hns</b> file to view the harness. Everything happens in your browser —
+        the file is never uploaded anywhere.</p>
+      <div class="drop" id="drop">
+        <div><b>Drop a .hns file here</b> or click to browse</div>
+        <div class="hint">Shows the embedded drawing(s), a pin-to-pin chart, and a wire list.</div>
+      </div>
+      <input type="file" id="file" accept=".hns,application/zip" style="display:none">
+      <p class="intro" id="loaderr"></p>
+    </div>
+
+    <div id="viewer" style="display:none">
+      <div class="intro" id="meta"></div>
+      <nav class="lenses" id="lensnav">
+        <button type="button" class="lens-btn" data-lens="drawings">Drawings</button>
+        <button type="button" class="lens-btn" data-lens="pinpin">Pin-to-Pin Chart</button>
+        <button type="button" class="lens-btn" data-lens="wirelist">Wire List</button>
+        <button type="button" class="lens-btn" id="openother" style="margin-left:auto">Open another…</button>
+      </nav>
+      <div class="viewbox" id="viewbox"></div>
+    </div>
+
+    <div class="foot">
+      Self-contained reference viewer for the open <b>.hns</b> format. No install, no upload, no network.
+      Shows customer/vendor part numbers only — not internal part numbers, and not an auto-generated schematic.
+    </div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+  var box = document.getElementById('viewbox');
+  var HNS = null; // { graph, meta, drawings:[{label,file,rev,unreleased,mime,base64}] }
+
+  // ---- tiny in-browser ZIP reader (STORED + DEFLATE via native DecompressionStream) ----
+  async function inflateRaw(bytes) {
+    var ds = new DecompressionStream('deflate-raw');
+    var ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+    return new Uint8Array(ab);
+  }
+  async function readZip(buf) {
+    var dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
+    var eocd = -1, min = Math.max(0, buf.byteLength - 22 - 65536);
+    for (var i = buf.byteLength - 22; i >= min; i--) { if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; } }
+    if (eocd < 0) throw new Error('This does not look like a .hns file (no ZIP end record).');
+    var count = dv.getUint16(eocd + 10, true), p = dv.getUint32(eocd + 16, true);
+    var entries = {};
+    for (var n = 0; n < count; n++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      var method = dv.getUint16(p + 10, true);
+      var compSize = dv.getUint32(p + 20, true);
+      var fnLen = dv.getUint16(p + 28, true), exLen = dv.getUint16(p + 30, true), cmLen = dv.getUint16(p + 32, true);
+      var localOff = dv.getUint32(p + 42, true);
+      var name = td.decode(u8.subarray(p + 46, p + 46 + fnLen));
+      var lfn = dv.getUint16(localOff + 26, true), lex = dv.getUint16(localOff + 28, true);
+      var dataStart = localOff + 30 + lfn + lex;
+      entries[name] = { method: method, comp: u8.subarray(dataStart, dataStart + compSize) };
+      p += 46 + fnLen + exLen + cmLen;
+    }
+    return {
+      names: Object.keys(entries),
+      get: async function (name) {
+        var e = entries[name];
+        if (!e) return null;
+        if (e.method === 0) return e.comp;
+        if (e.method === 8) return await inflateRaw(e.comp);
+        throw new Error('Unsupported compression (method ' + e.method + ') in entry ' + name);
+      }
+    };
+  }
+  function b64(bytes) {
+    var s = '', chunk = 0x8000;
+    for (var i = 0; i < bytes.length; i += chunk) s += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    return btoa(s);
+  }
+
+  async function loadBuffer(buf) {
+    var zip = await readZip(buf);
+    var td = new TextDecoder();
+    var manRaw = await zip.get('manifest.json');
+    if (!manRaw) throw new Error('No manifest.json inside this .hns.');
+    var manifest = JSON.parse(td.decode(manRaw));
+    var meta = {};
+    var metaRaw = await zip.get('meta.json');
+    if (metaRaw) meta = JSON.parse(td.decode(metaRaw));
+    var graph = manifest.graph || manifest;
+    var drawings = [];
+    var list = (meta.drawings || []);
+    for (var i = 0; i < list.length; i++) {
+      var d = list[i];
+      var bytes = d.arcname ? await zip.get(d.arcname) : null;
+      if (!bytes) continue;
+      var label = (d.type ? (d.type.charAt(0).toUpperCase() + d.type.slice(1)) : 'Drawing')
+        + (d.drawingNumber ? ' (' + d.drawingNumber + ')' : (d.file ? ' — ' + d.file : ''));
+      drawings.push({ label: label, file: d.file || (d.arcname || '').split('/').pop(),
+        rev: d.rev, unreleased: !!d.unreleased, mime: 'application/pdf', base64: b64(bytes) });
+    }
+    HNS = { graph: graph, meta: meta, drawings: drawings };
+    showViewer();
+  }
+
+  // ---- rendering (never reads graph node .aci; customer/vendor part numbers only) ----
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function byId() {
+    var m = {}; (HNS.graph.nodes || []).forEach(function (n) { m[n.id] = n; }); return m;
+  }
+  var nodes = {};
+  function nodeName(n) {
+    if (!n) return '?';
+    var pn = n.vendor_pn || '';
+    if (n.id && pn) return n.id + ' (' + pn + ')';
+    return n.label ? String(n.label).replace(/\s*\((?:ACI[0-9]+)\)/g, '') : (pn || n.id);
+  }
+  function endText(end) {
+    if (!end) return '';
+    var n = nodes[end.node];
+    if (n && n.atConnector && nodes[n.atConnector.node]) {
+      var conn = nodes[n.atConnector.node];
+      var t = n.vendor_pn ? '  ·  ' + esc(n.vendor_pn) + (n.spliceKind === 'ferrule' ? ' ferrule' : '') : '';
+      return esc(nodeName(conn)) + ' PIN ' + esc(n.atConnector.pin) + t;
+    }
+    var parts = [esc(nodeName(n))];
+    if (end.pin != null) parts.push('PIN ' + esc(end.pin));
+    var out = parts.join(' ');
+    if (end.terminal) out += '  ·  ' + esc(end.terminal);
+    return out;
+  }
+  function mergeKey(end) { var n = nodes[end && end.node]; return (n && n.type === 'splice') ? n.id : null; }
+
+  function renderPinToPin() {
+    var wires = HNS.graph.wires || [];
+    if (!wires.length) { box.innerHTML = '<div class="loading">No wires in this harness.</div>'; return; }
+    function spans(sel) {
+      var span = wires.map(function () { return 1; }), skip = wires.map(function () { return false; });
+      for (var i = 0; i < wires.length; i++) {
+        if (skip[i]) continue;
+        var k = mergeKey(sel(wires[i])); if (k == null) continue;
+        var j = i + 1;
+        while (j < wires.length && mergeKey(sel(wires[j])) === k) { skip[j] = true; span[i]++; j++; }
+      }
+      return { span: span, skip: skip };
+    }
+    var f = spans(function (w) { return w.end1; }), t = spans(function (w) { return w.end2; });
+    var html = '<table class="t"><thead><tr><th>Wire</th><th>Length</th><th>From &mdash; End 1</th><th>To &mdash; End 2</th></tr></thead><tbody>';
+    wires.forEach(function (w, i) {
+      html += '<tr><td>' + esc(w.gauge) + ' AWG ' + esc(w.color) + '</td><td>' + esc(w.length_in) + '"</td>';
+      if (!f.skip[i]) html += '<td' + (f.span[i] > 1 ? ' rowspan="' + f.span[i] + '"' : '') + '>' + endText(w.end1) + '</td>';
+      if (!t.skip[i]) html += '<td' + (t.span[i] > 1 ? ' rowspan="' + t.span[i] + '"' : '') + '>' + endText(w.end2) + '</td>';
+      html += '</tr>';
+    });
+    box.innerHTML = html + '</tbody></table>';
+  }
+  function renderWireList() {
+    var rows = (HNS.graph.wires || []).map(function (w) {
+      return '<tr><td>' + esc(w.id) + '</td><td>' + esc(w.gauge) + '</td><td>' + esc(w.color)
+        + '</td><td>' + esc(w.length_in) + '"</td><td>' + endText(w.end1) + '</td><td>' + endText(w.end2) + '</td></tr>';
+    }).join('');
+    box.innerHTML = '<table class="t"><thead><tr><th>Wire ID</th><th>Gauge</th><th>Color</th><th>Length</th><th>End 1</th><th>End 2</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  var dIdx = 0;
+  function renderDrawings() {
+    var ds = HNS.drawings || [];
+    if (!ds.length) { box.innerHTML = '<div class="loading">No drawing is embedded in this .hns.</div>'; return; }
+    if (dIdx >= ds.length) dIdx = 0;
+    var tabs = ds.map(function (d, i) {
+      return '<button type="button" class="dtab' + (i === dIdx ? ' active' : '') + '" data-idx="' + i + '">' + esc(d.label) + '</button>';
+    }).join('');
+    var d = ds[dIdx], uri = 'data:' + d.mime + ';base64,' + d.base64;
+    var m = esc(d.file) + (d.rev ? ' &middot; Rev ' + esc(d.rev) : '')
+      + (d.unreleased ? ' &middot; <span class="prelim">PRELIMINARY / NOT RELEASED</span>' : '')
+      + ' &middot; <a download="' + esc(d.file) + '" href="' + uri + '">Download</a>';
+    box.innerHTML = '<div class="dtabs">' + tabs + '</div><div class="dmeta">' + m + '</div><embed class="demb" type="' + d.mime + '" src="' + uri + '">';
+    Array.prototype.forEach.call(box.querySelectorAll('.dtab'), function (btn) {
+      btn.addEventListener('click', function () { dIdx = parseInt(btn.getAttribute('data-idx'), 10) || 0; renderDrawings(); });
+    });
+  }
+  var LENSES = { drawings: renderDrawings, pinpin: renderPinToPin, wirelist: renderWireList };
+  function show(lens) {
+    Array.prototype.forEach.call(document.querySelectorAll('.lens-btn[data-lens]'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-lens') === lens);
+    });
+    (LENSES[lens] || renderPinToPin)();
+  }
+
+  function showViewer() {
+    nodes = byId();
+    dIdx = 0;
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('viewer').style.display = '';
+    document.getElementById('pn').textContent = (HNS.meta.partNumber || HNS.graph.pn || '');
+    var g = HNS.graph, m = HNS.meta;
+    document.getElementById('meta').innerHTML = esc(g.title || '') + (g.rev ? ' &middot; Rev ' + esc(g.rev) : '')
+      + (m.generatedAt ? ' &middot; exported ' + esc(m.generatedAt) : '')
+      + ' &middot; <span class="prelim" style="color:var(--hns-warn)">UNCONTROLLED</span>';
+    show((HNS.drawings && HNS.drawings.length) ? 'drawings' : 'pinpin');
+  }
+
+  // ---- file intake (drag-drop + browse) ----
+  function handleFile(file) {
+    document.getElementById('loaderr').textContent = '';
+    var r = new FileReader();
+    r.onload = function () {
+      loadBuffer(r.result).catch(function (e) {
+        document.getElementById('loaderr').innerHTML = '<span class="err">Could not read that file: ' + esc(e && e.message) + '</span>';
+      });
+    };
+    r.readAsArrayBuffer(file);
+  }
+  var drop = document.getElementById('drop'), fileInput = document.getElementById('file');
+  drop.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+  document.getElementById('openother').addEventListener('click', function () { fileInput.click(); });
+  Array.prototype.forEach.call(document.querySelectorAll('.lens-btn[data-lens]'), function (btn) {
+    btn.addEventListener('click', function () { show(btn.getAttribute('data-lens')); });
+  });
+
+  // Exposed for automated testing (open a .hns programmatically).
+  window.__loadHnsBuffer = loadBuffer;
+})();
+</script>
+</body>
+</html>

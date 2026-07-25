@@ -1,0 +1,40 @@
+# Specification text license
+
+Copyright (c) 2026 Apogee Controls
+
+The **specification text** of this repository — everything under `spec/`, and all `*.md`
+documentation files — is licensed under the
+
+**Creative Commons Attribution 4.0 International License (CC BY 4.0)**
+
+Full legal text: https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+
+You are free to **share** (copy and redistribute in any medium or format) and **adapt**
+(remix, transform, and build upon the material) for any purpose, including commercially,
+provided you give appropriate credit.
+
+## Attribution
+
+Please attribute as:
+
+> Based on the `.hns` Wire-Harness Interchange Format specification by Apogee Controls,
+> licensed under CC BY 4.0. https://github.com/EMIP-PAMELA/hns-standard
+
+## Scope
+
+| Path | License |
+|---|---|
+| `spec/`, all `*.md` files | CC BY 4.0 (this file) |
+| `reference-tools/`, `docs/index.html`, `examples/*.html` | MIT (see `LICENSE`) |
+
+## Patent non-assertion
+
+Apogee Controls will not assert any patent it holds that is necessarily infringed by
+implementing this specification, against any conforming implementation of it.
+
+## No warranty
+
+This specification is provided without warranty of any kind. Apogee Controls accepts no
+liability arising from its use. Implementers are responsible for verifying that any harness
+built from data in this format conforms to the controlling engineering drawing.
