@@ -46,6 +46,14 @@
   .cta:hover { filter: brightness(1.08); }
   .cta .sub { display: block; font-weight: 400; font-size: 12px; opacity: .85; margin-top: 3px; }
   .or { text-align: center; color: var(--hns-text-dim); font-size: 12px; margin: 10px 0; }
+  .ways { background: var(--hns-panel); border: 1px solid var(--hns-line); border-radius: 10px;
+    padding: 14px 18px; margin: 18px 0 0; }
+  .ways h3 { margin: 0 0 4px; font-size: 14px; }
+  .ways p.lede { margin: 0 0 10px; color: var(--hns-text-dim); font-size: 12.5px; }
+  .ways ol { margin: 0; padding-left: 20px; }
+  .ways li { margin: 7px 0; font-size: 13px; line-height: 1.45; }
+  .ways li b { color: var(--hns-accent); }
+  .ways .note { color: var(--hns-text-dim); }
   .lenses { display: flex; gap: 8px; margin: 14px 0 12px; flex-wrap: wrap; }
   .lens-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--hns-line);
     background: var(--hns-panel); color: var(--hns-text); cursor: pointer; font-size: 13px; }
@@ -78,14 +86,14 @@
     </div>
 
     <div id="landing">
-      <p class="intro">A <b>.hns</b> file carries a wire harness as structured data — every
-        connector, wire, pin, length and termination — instead of a drawing to be
-        re-interpreted. This page opens one. Everything happens in your browser; nothing is
-        ever uploaded.</p>
+      <p class="intro"><b>A <code>.hns</code> file is one wire harness, as data.</b> Every
+        connector, wire, pin, length and termination — plus the original drawing — in a single
+        file, instead of a drawing someone has to read and re-type. This page opens one.
+        Nothing is uploaded; it all happens in your browser.</p>
 
       <button type="button" class="cta" id="loaddemo">
         See an example harness
-        <span class="sub">Opens a synthetic sample — nothing to download</span>
+        <span class="sub">Opens a sample right here — nothing to download</span>
       </button>
 
       <p class="or">— or open your own —</p>
@@ -96,6 +104,21 @@
       </div>
       <input type="file" id="file" accept=".hns,application/zip" style="display:none">
       <p class="intro" id="loaderr"></p>
+
+      <div class="ways">
+        <h3>Don't have this page? You still don't need any software.</h3>
+        <p class="lede">Three ways to read a <code>.hns</code>, in order of least effort:</p>
+        <ol>
+          <li><b>Hand it to an AI assistant and just ask.</b> Attach the file, no setup of any
+            kind — no schema, no plugin, nothing installed. <span class="note">"What's on pin 3
+            of J1?" · "Turn this into a cut list."</span> It works because the file carries a
+            plain-English description of itself inside it.</li>
+          <li><b>Rename it to <code>.zip</code> and unzip it.</b> Inside is plain text you can
+            read in Notepad, plus a <code>README.txt</code> explaining what each part is.</li>
+          <li><b>Build your own reader.</b> The format is published and open — a JSON Schema
+            and a plain-English spec. No license or permission required.</li>
+        </ol>
+      </div>
     </div>
 
     <div id="viewer" style="display:none">
