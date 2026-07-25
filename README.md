@@ -25,24 +25,43 @@ hand-off is a chance to get a wire, a length, or a termination wrong.
 A `.hns` file removes that interpretation layer. It carries the harness definition directly,
 so there is nothing to re-draw and nothing to re-interpret.
 
-## How this relates to existing formats
+## Why not just use KBL?
 
-**KBL (VDA 4964), VEC (VDA 4968), and HCV already model harnesses**, and model them in far
-more depth — 3D routing, bundle geometry, full manufacturing detail. Both KBL and VEC are
-genuinely open: the XSDs are MIT-licensed and the model documentation is CC BY 4.0, free from
-[prostep ivip](https://ecad-wiki.prostep.org/). If you already exchange KBL, **you do not
-need this.**
+Fair question, and it deserves a straight answer.
 
-`.hns` targets the case those formats do not reach: the small-to-mid harness shop and its
-customer, exchanging a few hundred part numbers a year, today over PDF and email, with no
-harness-CAD seat on either side. A three-wire lead assembly uses roughly a dozen of KBL's 104
-types. The bar here is not "richer than KBL" — it is *"better than a PDF, and implementable
-in an afternoon by one developer with the standard library."*
+**KBL (VDA 4964) and VEC (VDA 4968) already model harnesses, and model them far better than
+this does.** They are also genuinely open — the XSDs are MIT-licensed and the full model
+documentation is CC BY 4.0, free from [prostep ivip](https://ecad-wiki.prostep.org/). There
+is no paywall to route around and nothing here is a criticism of them.
+
+**If you exchange KBL today, use KBL. Stop reading.** This exists for the people who don't,
+and can't:
+
+- **The tools at this tier can't read or write it.** KBL is native to Capital and
+  E3.series. An HVAC or appliance OEM drawing its wiring in Creo Schematics or AutoCAD has no
+  KBL export, and its harness supplier has no KBL importer. Sending that customer a KBL file
+  hands them something they cannot open — the same problem as a PDF, with a worse extension.
+- **The implementation cost doesn't fit the shop.** 104 types, every concept split into a
+  catalog Part and an instance Occurrence, everything wired together by `IDREF`. Reading one
+  wire means resolving `Connection → Extremity → Contact_point → Cavity_occurrence →
+  Cavity`. That is correct and necessary at vehicle scale; it is also weeks of work for
+  someone whose entire software team is one person, if they have one at all.
+- **You'd carry a vehicle to ship a furnace harness.** Modules, variants, option codes,
+  component boxes, fuses, 3D routing with B-spline centre curves. A three-wire lead assembly
+  uses roughly a dozen of KBL's 104 types and ignores the rest.
+- **It wouldn't hand you interoperability anyway.** KBL declares `Length_type`,
+  `Wire_colour_type`, `Terminal_type` and `Tolerance_type` as unconstrained strings — the
+  actual values live in reference data, not the schema. So "just adopt the standard" still
+  leaves both parties agreeing bilaterally on what to put in those fields. That agreement is
+  most of the work, and it is what this format tries to write down.
+
+The bar here is not *"richer than KBL."* It is **"better than a PDF, and implementable in an
+afternoon by one developer with nothing but the standard library."**
 
 Where it makes sense, this format deliberately borrows KBL's structure — typed lengths,
-string cavity identifiers, party-scoped part numbers, features located along a span — and
-supplies the tight vocabulary KBL leaves to reference data. A field-by-field mapping to
-KBL 2.5 is planned.
+string cavity identifiers, party-scoped part numbers, features located along a span — rather
+than inventing alternatives. A field-by-field mapping to KBL 2.5 is planned, so anyone who
+later needs the real thing has a path to it.
 
 ## Principles
 
