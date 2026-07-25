@@ -59,7 +59,6 @@ days**: accepted, deferred with a reason, or declined with a reason.
 A file that validates against a published version will remain readable by conforming tools
 built for that version. We will not silently change what a version means.
 
-**Current exception, stated plainly:** v0.1 is a pre-release draft and is superseded. The v2
-model changes field names and structure. This promise applies from v1.0 onward; v0.1 was
-published explicitly as a draft to invite feedback, and the feedback found defects that
-cannot be fixed additively (see `CHANGELOG.md`).
+**This promise begins at 1.0.** The current draft is published to invite feedback before
+anything is frozen, and field names may still change in response to it — see
+[SPECIFICATION §8.1](spec/SPECIFICATION.md) for the areas still open.

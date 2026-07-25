@@ -1,15 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://emip-pamela.github.io/hns-standard/spec/hns-schema-1.json",
-  "title": ".hns container (harness interchange, schemaVersion 1)",
-  "description": "SUPERSEDED DRAFT -- schemaVersion 1 describes the v0.1 prototype container and is documented here so existing files remain readable. A revised model (v2) is in development and will change field names and structure; see the repository CHANGELOG before implementing. A .hns file is a ZIP archive (OPC/.docx-style). Its entries are described here as a single combined JSON document for validation convenience: {mimetype, manifest, meta, enrichment}. That combined object exists nowhere on disk -- to validate a single entry, use the corresponding definition directly, e.g. '#/definitions/manifest' for manifest.json. The archive MAY also carry one binary entry per meta.drawings[] record (path 'drawings/source/<file>' for a drawing authored by the sending party, or 'drawings/customer/<file>' for one supplied by the receiving party), STORED uncompressed, with provenance described by that array. Those binary entries are outside this JSON document's shape but are checked against meta.drawings[]. The archive SHOULD also carry a plain-text README.txt describing the specific file it is embedded in, per the specification's self-describing requirement; its absence is a warning, not a failure. NOTE: this schema documents field SHAPE only. The graph-theory invariants (root count, segments forming a tree, no double-booked connector pin, a wire's length agreeing with its path) are not expressible in JSON Schema and are specified in prose in spec/SPECIFICATION.md.",
+  "title": ".hns container — wire-harness interchange format",
+  "description": "A .hns file is a ZIP archive (OPC/.docx-style). Its entries are described here as a single combined JSON document for validation convenience: {mimetype, manifest, meta, enrichment}. That combined object exists nowhere on disk -- to validate a single entry, use the corresponding definition directly, e.g. '#/definitions/manifest' for manifest.json. The archive MAY also carry one binary entry per meta.drawings[] record (path 'drawings/source/<file>' for a drawing authored by the sending party, or 'drawings/customer/<file>' for one supplied by the receiving party), STORED uncompressed, with provenance described by that array. Those binary entries are outside this JSON document's shape but are checked against meta.drawings[]. The archive SHOULD also carry a plain-text README.txt describing the specific file it is embedded in, per the specification's self-describing requirement; its absence is a warning, not a failure. NOTE: this schema documents field SHAPE only. The graph-theory invariants (root count, segments forming a tree, no double-booked connector pin, a wire's length agreeing with its path) are not expressible in JSON Schema and are specified in prose in spec/SPECIFICATION.md.",
   "type": "object",
   "required": ["mimetype", "manifest", "meta"],
   "additionalProperties": false,
   "properties": {
     "mimetype": {
       "const": "application/vnd.emip.harness",
-      "description": "Literal content of the archive's first entry, named 'mimetype', written STORED (uncompressed) so a reader can identify the container by reading only the first local file header, without decompressing or parsing the central directory -- the OPC/EPUB convention. This identifier changes in the v2 model."
+      "description": "Literal content of the archive's first entry, named 'mimetype', written STORED (uncompressed) so a reader can identify the container by reading only the first local file header, without decompressing or parsing the central directory -- the OPC/EPUB convention."
     },
     "manifest": { "$ref": "#/definitions/manifest" },
     "meta": { "$ref": "#/definitions/meta" },
@@ -38,7 +38,7 @@
         "curated": { "type": "boolean", "description": "True when the graph was authored or corrected by hand rather than derived automatically. Note this indicates origin, not verification -- see `confirmed`." },
         "source": { "type": "string", "description": "Free-text description of where this definition came from." },
         "title": { "type": "string" },
-        "units": { "type": "string", "enum": ["in"], "description": "Unit for all length values in this graph. schemaVersion 1 is inch-only; the v2 model carries a unit with every value." },
+        "units": { "type": "string", "enum": ["in"], "description": "Unit for all length values in this graph. Inch-only at present." },
         "nodes": {
           "type": "array", "minItems": 1,
           "items": { "$ref": "#/definitions/harnessGraphNode" }
@@ -80,8 +80,8 @@
         "vendor_pn": { "type": "string", "description": "The prevailing (vendor or customer) part number for the item at this node. This is the identifier intended for exchange between parties." },
         "desc": { "type": "string" },
         "label": { "type": "string" },
-        "terminal": { "type": "string", "description": "Free-text description of the termination at this node. Producers vary in what they place here; the v2 model decomposes this into separate part, style, and strip-length fields." },
-        "pins": { "type": "integer", "minimum": 1, "description": "Number of positions, required when `type` is 'connector'. schemaVersion 1 identifies positions by number only; the v2 model enumerates cavities explicitly so that lettered positions are expressible." },
+        "terminal": { "type": "string", "description": "Free-text description of the termination at this node. Producers vary in what they place here; consumers should not attempt to parse it into structured fields." },
+        "pins": { "type": "integer", "minimum": 1, "description": "Number of positions, required when `type` is 'connector'. Positions are identified by number." },
         "spliceKind": {
           "type": "string",
           "enum": ["ferrule"],
@@ -100,7 +100,7 @@
     },
     "harnessGraphSegment": {
       "type": "object",
-      "description": "A span of the harness between two nodes. schemaVersion 1 segments have no identifier, so nothing can be positioned along one; the v2 model gives every segment a required id.",
+      "description": "A span of the harness between two nodes.",
       "required": ["from", "to"],
       "properties": {
         "from": { "type": "string" },
@@ -116,11 +116,11 @@
       "required": ["id", "gauge", "color", "length_in", "path", "end1", "end2"],
       "properties": {
         "id": { "type": "string" },
-        "gauge": { "type": "string", "description": "Conductor size. schemaVersion 1 carries no unit; values are AWG by convention." },
-        "color": { "type": "string", "description": "Insulation colour as free text. Producers vary between long and abbreviated forms, and the ordering of base and stripe is undefined; the v2 model adopts a controlled vocabulary with explicit roles." },
+        "gauge": { "type": "string", "description": "Conductor size. Values are AWG by convention; no unit is carried." },
+        "color": { "type": "string", "description": "Insulation colour as free text. Producers vary between long and abbreviated forms, and the ordering of base and stripe is not defined by this schema -- consumers should not rely on either." },
         "wireId": { "type": "string", "description": "Printed identification marker on the physical conductor, when applicable." },
-        "length_in": { "type": "number", "description": "Conductor length in inches. schemaVersion 1 does not state whether this is a cut length or a length measured with terminals fully seated -- a real ambiguity that the v2 model resolves by carrying typed lengths." },
-        "path": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Node ids the conductor traverses, in order. A single entry indicates both ends land on the same connector with no intervening span. Because this is a walk over nodes rather than a list of spans, it cannot always describe the true physical route; the v2 model routes over segment ids instead." },
+        "length_in": { "type": "number", "description": "Conductor length in inches. IMPORTANT: this schema does not state whether the value is a cut length or a length measured with terminals fully seated. Producers and consumers must agree on which is meant; see spec/SPECIFICATION.md." },
+        "path": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Node ids the conductor traverses, in order. A single entry indicates both ends land on the same connector with no intervening span. Note this is a walk over nodes rather than a list of spans, so it does not always describe the conductor's true physical route." },
         "end1": { "$ref": "#/definitions/harnessGraphWireEnd" },
         "end2": { "$ref": "#/definitions/harnessGraphWireEnd" }
       }
@@ -146,8 +146,8 @@
         "generatedAt": { "type": "string", "format": "date-time", "description": "Supplied by the caller rather than read from a clock during generation, so that regenerating the same input produces byte-identical output." },
         "generatedBy": { "type": "string" },
         "source": { "type": "string", "description": "Identifier of the source definition this export was built from." },
-        "graphSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of manifest.graph, canonically serialized. KNOWN DEFECT in schemaVersion 1: the canonicalization rule does not constrain number formatting, so a producer that writes 18.0 and one that writes 18 for the same value compute different hashes. Implementations in languages with a single numeric type will therefore disagree with the reference implementation. The v2 model adopts RFC 8785." },
-        "controlled": { "const": false, "description": "Whether this file is a controlled document. Always false in schemaVersion 1: an export is uncontrolled once it leaves the producing system, and no controlled-export mode is defined." },
+        "graphSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "SHA-256 of manifest.graph, canonically serialized as JSON with sorted keys, no insignificant whitespace, UTF-8. IMPLEMENTERS PLEASE NOTE: that rule does not constrain how numbers are formatted, so a producer writing 18.0 and one writing 18 for the same value will compute different digests. Implementations in languages with a single numeric type may therefore disagree with one written in a language that distinguishes integers from floats. Pin your number formatting explicitly, and see spec/SPECIFICATION.md." },
+        "controlled": { "const": false, "description": "Whether this file is a controlled document. Always false: an export is uncontrolled once it leaves the producing system, and no controlled-export mode is defined." },
         "provenance": { "type": "string" },
         "origin": {
           "type": "object",

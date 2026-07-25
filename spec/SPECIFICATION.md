@@ -3,13 +3,6 @@
 **Version:** 0.1 (pre-release draft) · **Format identifier:** `emip-harness/1` ·
 **Media type:** `application/vnd.emip.harness` · **License:** CC BY 4.0
 
-> **⚠️ Superseded draft.** Version 0.1 documents the prototype container so existing files
-> remain readable. A revised model (v2) is in development and **will change field names and
-> structure** — including typed lengths that resolve the cut-vs-seated ambiguity, string
-> cavity identifiers, a controlled colour vocabulary, required segment identifiers, and
-> RFC 8785 canonicalization. **Do not build a production implementation against v0.1.**
-> See [CHANGELOG](../CHANGELOG.md).
-
 > This is the human-readable specification. The normative, machine-validatable contract is
 > [`hns-schema-1.json`](hns-schema-1.json) (JSON Schema). Where the two differ, the JSON
 > Schema governs the exact field list; this document explains intent and structure.
@@ -168,19 +161,25 @@ accept.
 >   "meta":     <contents of meta.json> }
 > ```
 
-### 8.1 Known defects in v0.1
+### 8.1 Open items
 
-Documented rather than silently carried, and each is addressed in v2:
+Stated plainly so an implementer is not surprised. These are the areas still being worked
+out, and feedback on any of them is welcome.
 
-- **`graphSha256` is not reproducible across languages.** The canonicalization rule does not
-  constrain number formatting, so a producer emitting `18.0` and one emitting `18` for the
-  same value compute different digests. A reader in a language with a single numeric type
-  will disagree with the reference implementation on files it should accept. v2 adopts
-  RFC 8785.
-- **`length_in` has no stated datum** — cut length and terminal-seated length differ, and
-  v0.1 does not say which is meant.
-- **Positions are integers**, so lettered cavities cannot be expressed.
-- **Colour is free text** with no controlled vocabulary and undefined base/stripe ordering.
-- **Segments have no identifier**, so nothing can be positioned along a span.
-- **The strict-tree rule in §7 can force a false route** for a conductor that does not enter
-  the bundle, because a `path` must be a walk over nodes.
+- **Number formatting in the hash.** The canonicalization rule above does not constrain how
+  numbers are written, so a producer emitting `18.0` and one emitting `18` for the same value
+  compute different digests. Implementations in languages with a single numeric type may
+  therefore disagree with one that distinguishes integers from floats. Pin your number
+  formatting explicitly. Adopting a formal canonicalization scheme (RFC 8785) is the
+  intended fix.
+- **Length datum.** `length_in` does not state whether it is a cut length or a length
+  measured with terminals fully seated. These differ by the seating depth on every
+  conductor. Producers and consumers must agree until the format carries the distinction
+  explicitly.
+- **Position identifiers are integers**, so lettered cavities (`A1`) cannot be expressed.
+- **Colour is free text** — no controlled vocabulary, and base/stripe ordering is undefined.
+- **Segments have no identifier**, so nothing can be located along a span. This is what
+  prevents the format from carrying tie placement, sleeving, or bundle diameter.
+- **The tree rule in §7 can force a misleading route.** Because a wire's `path` is a walk
+  over nodes, a conductor that does not enter the bundle — a short jumper between two
+  adjacent terminations, say — must still be described as passing through intervening nodes.

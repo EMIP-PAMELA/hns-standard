@@ -4,12 +4,8 @@
 **meaning** of a harness (every connector, wire, pin, length, termination) as structured
 data, not a picture of it.*
 
-**Status: prototype / pre-release draft (v0.1).** Stewarded by Apogee Controls.
-
-> **⚠️ v0.1 is superseded and a revised model (v2) is in development.** v0.1 remains
-> published so existing files stay readable, but it has known defects — see
-> [SPECIFICATION §8.1](spec/SPECIFICATION.md). **Don't build a production implementation
-> against it yet.** Feedback on the direction is very welcome now.
+**Status: draft, published for feedback.** Field names and required fields may still change.
+Stewarded by Apogee Controls.
 
 **Try it in 30 seconds:** [open the viewer](https://emip-pamela.github.io/hns-standard/) and
 click **"Load the example harness"** — or drag in any `.hns` of your own. Nothing is
@@ -43,9 +39,10 @@ harness-CAD seat on either side. A three-wire lead assembly uses roughly a dozen
 types. The bar here is not "richer than KBL" — it is *"better than a PDF, and implementable
 in an afternoon by one developer with the standard library."*
 
-The v2 model deliberately borrows KBL's structure (typed lengths, string cavities, scoped
-identifiers, positioned features) and supplies the tight vocabulary KBL leaves to reference
-data. A field-by-field mapping will be published alongside it.
+Where it makes sense, this format deliberately borrows KBL's structure — typed lengths,
+string cavity identifiers, party-scoped part numbers, features located along a span — and
+supplies the tight vocabulary KBL leaves to reference data. A field-by-field mapping to
+KBL 2.5 is planned.
 
 ## Principles
 
