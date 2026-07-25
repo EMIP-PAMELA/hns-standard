@@ -127,6 +127,7 @@
         <button type="button" class="lens-btn" data-lens="drawings">Drawings</button>
         <button type="button" class="lens-btn" data-lens="pinpin">Pin-to-Pin Chart</button>
         <button type="button" class="lens-btn" data-lens="wirelist">Wire List</button>
+        <button type="button" class="lens-btn" data-lens="bom">Bill of Material</button>
         <button type="button" class="lens-btn" id="openother" style="margin-left:auto">Open another…</button>
       </nav>
       <div class="viewbox" id="viewbox"></div>
@@ -273,6 +274,54 @@
     }).join('');
     box.innerHTML = '<table class="t"><thead><tr><th>Wire ID</th><th>Gauge</th><th>Color</th><th>Length</th><th>End 1</th><th>End 2</th></tr></thead><tbody>' + rows + '</tbody></table>';
   }
+  // Derived, not stored: the bill of material is computed from the same nodes and wires
+  // the other lenses read. Nothing here is a separate list that could drift out of sync.
+  function buildBom() {
+    var g = HNS.graph, items = [], seen = {};
+    function add(kind, pn, desc, qty, unit) {
+      if (!pn) return;
+      var k = kind + '|' + pn + '|' + desc;
+      if (seen[k]) { seen[k].qty += qty; return; }
+      seen[k] = { kind: kind, pn: pn, desc: desc, qty: qty, unit: unit || 'ea' };
+      items.push(seen[k]);
+    }
+    var KIND = { connector: 'Connector', splice: 'Splice', terminal: 'Terminal',
+                 breakout: 'Breakout', grommet: 'Grommet', 'flying-lead': 'Flying lead' };
+    (g.nodes || []).forEach(function (n) {
+      var desc = (n.desc || n.label || '').replace(/\s*\((?:ACI[0-9]+)\)/g, '');
+      if (n.pins) desc = (desc ? desc + ' — ' : '') + n.pins + ' position';
+      add(KIND[n.type] || n.type || 'Item', n.vendor_pn, desc, 1);
+    });
+    // Terminations are free text in this schema version; count distinct strings honestly
+    // rather than guessing a part number out of them.
+    (g.wires || []).forEach(function (w) {
+      [w.end1, w.end2].forEach(function (e) {
+        if (e && e.terminal) add('Termination', String(e.terminal), '', 1);
+      });
+    });
+    var wire = {};
+    (g.wires || []).forEach(function (w) {
+      var k = (w.gauge || '?') + ' AWG ' + (w.color || '?');
+      wire[k] = (wire[k] || 0) + (Number(w.length_in) || 0);
+    });
+    Object.keys(wire).sort().forEach(function (k) {
+      add('Wire', k, 'cut length total', Math.round(wire[k] * 10) / 10, 'in');
+    });
+    return items;
+  }
+  function renderBom() {
+    var items = buildBom();
+    if (!items.length) { box.innerHTML = '<div class="loading">Nothing to derive a bill of material from.</div>'; return; }
+    var rows = items.map(function (it, i) {
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(it.kind) + '</td><td>' + esc(it.pn)
+        + '</td><td>' + esc(it.desc) + '</td><td>' + esc(it.qty) + ' ' + esc(it.unit) + '</td></tr>';
+    }).join('');
+    box.innerHTML = '<p class="dmeta">Derived from the harness data in this file — not a stored list. '
+      + 'Covers connectors, terminations, splices and wire; consumables such as ties, tape, sleeving and '
+      + 'labels are not carried by this schema version.</p>'
+      + '<table class="t"><thead><tr><th>#</th><th>Type</th><th>Part / Spec</th><th>Description</th>'
+      + '<th>Qty</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
   var dIdx = 0;
   function renderDrawings() {
     var ds = HNS.drawings || [];
@@ -290,7 +339,7 @@
       btn.addEventListener('click', function () { dIdx = parseInt(btn.getAttribute('data-idx'), 10) || 0; renderDrawings(); });
     });
   }
-  var LENSES = { drawings: renderDrawings, pinpin: renderPinToPin, wirelist: renderWireList };
+  var LENSES = { drawings: renderDrawings, pinpin: renderPinToPin, wirelist: renderWireList, bom: renderBom };
   function show(lens) {
     Array.prototype.forEach.call(document.querySelectorAll('.lens-btn[data-lens]'), function (b) {
       b.classList.toggle('active', b.getAttribute('data-lens') === lens);
