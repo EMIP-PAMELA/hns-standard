@@ -39,6 +39,13 @@
   .drop b { color: var(--hns-accent); }
   .drop .hint { color: var(--hns-text-dim); font-size: 12px; margin-top: 8px; }
   .err { color: var(--hns-warn); }
+  .cta { display: block; width: 100%; padding: 16px 20px; margin: 0 0 10px;
+    border: 1px solid var(--hns-accent); border-radius: 10px; background: var(--hns-accent);
+    color: #fff; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    text-align: center; transition: filter .15s; }
+  .cta:hover { filter: brightness(1.08); }
+  .cta .sub { display: block; font-weight: 400; font-size: 12px; opacity: .85; margin-top: 3px; }
+  .or { text-align: center; color: var(--hns-text-dim); font-size: 12px; margin: 10px 0; }
   .lenses { display: flex; gap: 8px; margin: 14px 0 12px; flex-wrap: wrap; }
   .lens-btn { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--hns-line);
     background: var(--hns-panel); color: var(--hns-text); cursor: pointer; font-size: 13px; }
@@ -71,15 +78,23 @@
     </div>
 
     <div id="landing">
-      <p class="intro">Open a <b>.hns</b> file to view the harness. Everything happens in your browser —
-        the file is never uploaded anywhere.</p>
+      <p class="intro">A <b>.hns</b> file carries a wire harness as structured data — every
+        connector, wire, pin, length and termination — instead of a drawing to be
+        re-interpreted. This page opens one. Everything happens in your browser; nothing is
+        ever uploaded.</p>
+
+      <button type="button" class="cta" id="loaddemo">
+        See an example harness
+        <span class="sub">Opens a synthetic sample — nothing to download</span>
+      </button>
+
+      <p class="or">— or open your own —</p>
+
       <div class="drop" id="drop">
         <div><b>Drop a .hns file here</b> or click to browse</div>
         <div class="hint">Shows the embedded drawing(s), a pin-to-pin chart, and a wire list.</div>
       </div>
       <input type="file" id="file" accept=".hns,application/zip" style="display:none">
-      <p class="intro">Don't have one? <a href="#" id="loaddemo">Load the example harness</a> —
-        a synthetic file using fictional parts.</p>
       <p class="intro" id="loaderr"></p>
     </div>
 
