@@ -5,11 +5,13 @@
 # FICTIONAL part numbers belong in examples/.
 #
 # As a guard, all .hns files are ignored by default EXCEPT those explicitly
-# placed under examples/ (which must be synthetic). If you add a real .hns
-# anywhere for local testing, it will be ignored — keep it that way.
+# placed under examples/ or docs/ (both of which are PUBLIC and must contain
+# synthetic files only). If you add a real .hns anywhere for local testing, it
+# will be ignored — keep it that way.
 # ---------------------------------------------------------------------------
 *.hns
 !examples/*.hns
+!docs/*.hns
 
 # OS / editor junk
 .DS_Store

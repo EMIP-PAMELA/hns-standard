@@ -78,6 +78,8 @@
         <div class="hint">Shows the embedded drawing(s), a pin-to-pin chart, and a wire list.</div>
       </div>
       <input type="file" id="file" accept=".hns,application/zip" style="display:none">
+      <p class="intro">Don't have one? <a href="#" id="loaddemo">Load the example harness</a> —
+        a synthetic file using fictional parts.</p>
       <p class="intro" id="loaderr"></p>
     </div>
 
@@ -293,6 +295,20 @@
   });
   drop.addEventListener('drop', function (e) { if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
   document.getElementById('openother').addEventListener('click', function () { fileInput.click(); });
+  document.getElementById('loaddemo').addEventListener('click', function (e) {
+    e.preventDefault();
+    var errEl = document.getElementById('loaderr');
+    errEl.textContent = 'Loading example…';
+    fetch('HNS-DEMO-001.hns').then(function (res) {
+      if (!res.ok) throw new Error('example not found (HTTP ' + res.status + ')');
+      return res.arrayBuffer();
+    }).then(function (buf) {
+      errEl.textContent = '';
+      return loadBuffer(buf);
+    }).catch(function (err) {
+      errEl.innerHTML = '<span class="err">Could not load the example: ' + esc(err && err.message) + '</span>';
+    });
+  });
   Array.prototype.forEach.call(document.querySelectorAll('.lens-btn[data-lens]'), function (btn) {
     btn.addEventListener('click', function () { show(btn.getAttribute('data-lens')); });
   });

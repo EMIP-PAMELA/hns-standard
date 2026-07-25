@@ -11,9 +11,9 @@ data, not a picture of it.*
 > [SPECIFICATION §8.1](spec/SPECIFICATION.md). **Don't build a production implementation
 > against it yet.** Feedback on the direction is very welcome now.
 
-**Try it:** [open the viewer](https://emip-pamela.github.io/hns-standard/) → drag in
-[`examples/HNS-DEMO-001.hns`](examples/HNS-DEMO-001.hns). Nothing is uploaded; it runs
-entirely in your browser.
+**Try it in 30 seconds:** [open the viewer](https://emip-pamela.github.io/hns-standard/) and
+click **"Load the example harness"** — or drag in any `.hns` of your own. Nothing is
+uploaded; it runs entirely in your browser.
 
 **Who uses it:** Apogee Controls produces `.hns` from its own engineering system today.
 There is no second implementer yet — that is exactly what this repository is for.
