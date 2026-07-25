@@ -16,52 +16,97 @@ There is no second implementer yet — that is exactly what this repository is f
 
 ---
 
-## Why
+## The problem
 
-Today a harness is exchanged as a **drawing**. The receiving company re-interprets that
-drawing into their own — and often sends it back to confirm they read it right. Every
-hand-off is a chance to get a wire, a length, or a termination wrong.
+A harness is designed by one company and built by another. The definition is handed over as
+a **drawing** — a PDF, usually emailed, sometimes with a spreadsheet beside it.
 
-A `.hns` file removes that interpretation layer. It carries the harness definition directly,
-so there is nothing to re-draw and nothing to re-interpret.
+So the receiving shop reads that drawing and types it back in. Every wire, every pin, every
+length, every termination, into their own system. Then they draw their own version of it and
+send it back so the customer can confirm they read it right. That confirmation round-trip
+exists for one reason: **there was no way to send the meaning, only a picture of it.**
 
-## Why not just use KBL?
+Three things follow, and all of them cost real money:
 
-Fair question, and it deserves a straight answer.
+- **Re-keying is where errors enter.** One drawing can carry thirty or more part numbers.
+  Every one is transcribed by hand, by someone reading a dimension off a printout.
+- **A picture cannot be checked.** A released drawing can name a wire's colour one way in the
+  from-column and a different way in the to-column, and nothing anywhere objects. It can
+  double-book a connector position. It can dimension a length that doesn't match the sum of
+  its own segments. These sit in circulation for years because no tool can read a PDF well
+  enough to disagree with it.
+- **The round-trip is pure overhead.** Redrawing someone else's harness to prove you
+  understood it adds weeks and produces nothing that didn't already exist.
 
-**KBL (VDA 4964) and VEC (VDA 4968) already model harnesses, and model them far better than
-this does.** They are also genuinely open — the XSDs are MIT-licensed and the full model
-documentation is CC BY 4.0, free from [prostep ivip](https://ecad-wiki.prostep.org/). There
-is no paywall to route around and nothing here is a criticism of them.
+## What a `.hns` does about it
 
-**If you exchange KBL today, use KBL. Stop reading.** This exists for the people who don't,
-and can't:
+It carries the definition itself, so there is nothing to re-key and nothing to re-interpret.
+The original drawing can ride along inside the same file, so nobody loses the controlling
+document.
 
-- **The tools at this tier can't read or write it.** KBL is native to Capital and
-  E3.series. An HVAC or appliance OEM drawing its wiring in Creo Schematics or AutoCAD has no
-  KBL export, and its harness supplier has no KBL importer. Sending that customer a KBL file
-  hands them something they cannot open — the same problem as a PDF, with a worse extension.
-- **The implementation cost doesn't fit the shop.** 104 types, every concept split into a
-  catalog Part and an instance Occurrence, everything wired together by `IDREF`. Reading one
-  wire means resolving `Connection → Extremity → Contact_point → Cavity_occurrence →
-  Cavity`. That is correct and necessary at vehicle scale; it is also weeks of work for
-  someone whose entire software team is one person, if they have one at all.
-- **You'd carry a vehicle to ship a furnace harness.** Modules, variants, option codes,
-  component boxes, fuses, 3D routing with B-spline centre curves. A three-wire lead assembly
-  uses roughly a dozen of KBL's 104 types and ignores the rest.
-- **It wouldn't hand you interoperability anyway.** KBL declares `Length_type`,
+And because the harness is data rather than a picture, **it can be checked.** A `.hns` with a
+double-booked position, a wire whose length disagrees with its own path, or an end that
+references a connector that isn't there does not validate. You cannot send an
+internally-inconsistent harness without being told. That is the part a PDF can never do, and
+it is the whole point.
+
+## Why not just send a spreadsheet?
+
+Because a spreadsheet has no shape. Every shop's columns differ, so each trading pair
+negotiates a layout and writes a one-off importer for it. Nothing detects a pin used twice or
+a length that doesn't add up. The drawing travels separately and drifts out of sync. And
+there is no way to prove the file you received is the file that was sent.
+
+A `.hns` fixes the shape, carries the drawing inside it, validates against published rules,
+and hashes its own contents. It is still just a ZIP of plain JSON you can unzip and read.
+
+## How this relates to KBL
+
+**This is not a competitor to KBL, and it is not an argument that KBL got anything wrong.**
+It fills a niche KBL was never aimed at.
+
+KBL (VDA 4964) and VEC (VDA 4968) are the automotive harness standards, and they are
+genuinely open — the XSDs are MIT-licensed and the full model documentation is CC BY 4.0,
+free from [prostep ivip](https://ecad-wiki.prostep.org/). No paywall, nothing to route
+around.
+
+**KBL models more than this does, and most of that is vehicle-specific.** 3D routing with
+B-spline centre curves, bundle cross-sections, fixing orientation in space, modules and
+variants and option codes, component boxes, fuses. That richness exists because a KBL file is
+produced *by harness CAD* — the geometry is a by-product of designing the harness in 3D
+against a vehicle body.
+
+Which is exactly why it doesn't reach this tier:
+
+- **Neither side has the tooling, or the data.** KBL is native to Capital and E3.series. An
+  HVAC or appliance OEM drawing its wiring in Creo Schematics or AutoCAD has no KBL export
+  and no 3D harness model to export *from*. Its supplier has no importer. Sending that
+  customer a KBL file hands them something they cannot open — the same problem as a PDF, with
+  a less familiar extension.
+- **Most of the model would sit empty.** A three-wire lead assembly uses roughly a dozen of
+  KBL's 104 types. You would be carrying the machinery for a vehicle wiring system to ship a
+  furnace harness, and leaving the fields that justify that machinery blank.
+- **The implementation doesn't fit the shop.** Every concept is split into a catalog `Part`
+  and an instance `Occurrence`, wired together by `IDREF`. Reading a single wire means
+  resolving `Connection → Extremity → Contact_point → Cavity_occurrence → Cavity`. That is
+  the right design at vehicle scale. It is also weeks of work for a company whose software
+  team is one person, if it has one.
+- **And it would not hand you interoperability anyway.** KBL declares `Length_type`,
   `Wire_colour_type`, `Terminal_type` and `Tolerance_type` as unconstrained strings — the
-  actual values live in reference data, not the schema. So "just adopt the standard" still
-  leaves both parties agreeing bilaterally on what to put in those fields. That agreement is
-  most of the work, and it is what this format tries to write down.
+  permitted values live in reference data, not in the schema. Two parties adopting KBL still
+  have to agree bilaterally on what goes in those fields. That agreement is most of the real
+  work, and writing it down is what this format actually contributes.
 
-The bar here is not *"richer than KBL."* It is **"better than a PDF, and implementable in an
-afternoon by one developer with nothing but the standard library."**
+So the bar here is not *"richer than KBL."* It is **"better than a PDF, and implementable in
+an afternoon by one developer with nothing but the standard library."**
 
-Where it makes sense, this format deliberately borrows KBL's structure — typed lengths,
+Where the two overlap, this format deliberately borrows KBL's structure — typed lengths,
 string cavity identifiers, party-scoped part numbers, features located along a span — rather
-than inventing alternatives. A field-by-field mapping to KBL 2.5 is planned, so anyone who
-later needs the real thing has a path to it.
+than inventing alternatives to it. A field-by-field mapping to KBL 2.5 is planned, so a shop
+that later moves up to harness CAD has a path rather than a migration.
+
+**If you already exchange KBL with your customers, keep doing that.** This is for the far
+larger number of shops who exchange PDFs.
 
 ## Principles
 
