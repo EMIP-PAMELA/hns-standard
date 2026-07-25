@@ -98,6 +98,31 @@ later needs the real thing has a path to it.
 | [`CHANGELOG.md`](CHANGELOG.md) | |
 | [`LICENSE`](LICENSE) · [`LICENSE-SPEC`](LICENSE-SPEC) | MIT (code) · CC BY 4.0 (spec text) |
 
+## Two forms of the same harness
+
+A producer can hand you either of these. They carry identical data — the difference is only
+whether a reader is bundled with it.
+
+| | `harness.hns` | `harness.hns.html` |
+|---|---|---|
+| **What it is** | The interchange file: a ZIP of plain JSON | The same harness with a viewer baked in |
+| **Opening it** | Any `.hns` viewer, your own tools, or just unzip it | Double-click — opens in any browser |
+| **Recipient needs** | To know what a `.hns` is | Nothing at all |
+| **Machine-readable** | Yes — this is the one to build against | Not intended for ingest |
+| **Size** | Small | Larger (carries the viewer) |
+| **Works offline** | Yes | Yes — no network, no install, nothing to trust |
+
+Both are in [`examples/`](examples/): [`HNS-DEMO-001.hns`](examples/HNS-DEMO-001.hns) and
+[`HNS-DEMO-001.hns.html`](examples/HNS-DEMO-001.hns.html) (13 KB, entirely self-contained).
+
+**Send the `.hns.html` when the recipient has never heard of this format** — it needs no
+explanation and no software. **Send the `.hns` when they intend to consume the data.**
+
+> **Emailing the `.hns.html`?** Zip it first. Some mail and chat clients try to preview an
+> HTML attachment inline, fail, and show a blank white page — the file is fine, but the
+> recipient concludes it's broken. Zipping forces a download. Sending a link to a hosted
+> viewer avoids the problem entirely.
+
 ## How to read a `.hns`
 
 1. **The hosted viewer** — [emip-pamela.github.io/hns-standard](https://emip-pamela.github.io/hns-standard/).
@@ -107,6 +132,12 @@ later needs the real thing has a path to it.
 3. **Your own tools** — build to [`spec/hns-schema-1.json`](spec/hns-schema-1.json) and
    ingest directly. Check a file with
    [`reference-tools/validate_hns.py`](reference-tools/validate_hns.py) (Python stdlib only).
+4. **Hand it to an AI assistant** — with no schema, no documentation, and no other context.
+   Ask it what's on pin 3 of J1, or to turn the harness into a cut list. It works because
+   every `.hns` carries a plain-text `README.txt` that describes that specific file's own
+   structure, and because the JSON uses descriptive field names rather than codes — so the
+   file explains itself to whatever opens it. This is a consequence of the design being
+   small, flat and self-describing, not a feature bolted on afterwards.
 
 ## Licensing
 
