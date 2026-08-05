@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://emip-pamela.github.io/hns-standard/spec/hns-schema-1.json",
+  "$id": "https://nehemiah-holdings.github.io/hns-standard/spec/hns-schema-1.json",
   "title": ".hns container — wire-harness interchange format",
   "description": "A .hns file is a ZIP archive (OPC/.docx-style). Its entries are described here as a single combined JSON document for validation convenience: {mimetype, manifest, meta, enrichment}. That combined object exists nowhere on disk -- to validate a single entry, use the corresponding definition directly, e.g. '#/definitions/manifest' for manifest.json. The archive MAY also carry one binary entry per meta.drawings[] record (path 'drawings/source/<file>' for a drawing authored by the sending party, or 'drawings/customer/<file>' for one supplied by the receiving party), STORED uncompressed, with provenance described by that array. Those binary entries are outside this JSON document's shape but are checked against meta.drawings[]. The archive SHOULD also carry a plain-text README.txt describing the specific file it is embedded in, per the specification's self-describing requirement; its absence is a warning, not a failure. NOTE: this schema documents field SHAPE only. The graph-theory invariants (root count, segments forming a tree, no double-booked connector pin, a wire's length agreeing with its path) are not expressible in JSON Schema and are specified in prose in spec/SPECIFICATION.md.",
   "type": "object",

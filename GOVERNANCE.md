@@ -42,7 +42,7 @@ valid, and the schema for it stays available.
 
 ## Proposing a change
 
-Open an [issue](https://github.com/EMIP-PAMELA/hns-standard/issues) describing the harness
+Open an [issue](https://github.com/nehemiah-holdings/hns-standard/issues) describing the harness
 modeling need and, where possible, a **synthetic** example. **Please do not attach a real
 customer harness definition or drawing** — describe the shape of the problem instead.
 

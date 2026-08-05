@@ -7,7 +7,7 @@ data, not a picture of it.*
 **Status: draft, published for feedback.** Field names and required fields may still change.
 Stewarded by Apogee Controls.
 
-**Try it in 30 seconds:** [open the viewer](https://emip-pamela.github.io/hns-standard/) and
+**Try it in 30 seconds:** [open the viewer](https://nehemiah-holdings.github.io/hns-standard/) and
 click **"Load the example harness"** — or drag in any `.hns` of your own. Nothing is
 uploaded; it runs entirely in your browser.
 
@@ -211,7 +211,7 @@ explanation and no software. **Send the `.hns` when they intend to consume the d
 
 ## How to read a `.hns`
 
-1. **The hosted viewer** — [emip-pamela.github.io/hns-standard](https://emip-pamela.github.io/hns-standard/).
+1. **The hosted viewer** — [nehemiah-holdings.github.io/hns-standard](https://nehemiah-holdings.github.io/hns-standard/).
    Drop in any `.hns` and it renders in your browser: embedded drawings, pin-to-pin chart,
    wire list. No install, no upload, no network round-trip.
 2. **Unzip it** — it's a ZIP of plain JSON with a `README.txt` inside. No tools required.
@@ -243,7 +243,7 @@ examples using **fictional** part numbers only. Real `.hns` files stay in privat
 ## Contributing
 
 Proposals and defect reports are welcome via
-[Issues](https://github.com/EMIP-PAMELA/hns-standard/issues). Please do not attach a real
+[Issues](https://github.com/nehemiah-holdings/hns-standard/issues). Please do not attach a real
 customer harness or drawing to an issue — describe the shape of the problem instead. See
 [GOVERNANCE.md](GOVERNANCE.md) for how changes are decided.
 
